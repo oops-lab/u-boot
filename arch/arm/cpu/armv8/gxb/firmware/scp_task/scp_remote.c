@@ -263,7 +263,7 @@ void backuremote_register(void)
 
 void resume_remote_register(void)
 {
-	int tmp = 0;
+	int tmp __attribute__((unused)) = 0;
 	writel(backuAO_RTI_PIN_MUX_REG, AO_RTI_PIN_MUX_REG);
 	writel(backuAO_IR_DEC_REG0, AO_MF_IR_DEC_REG0);
 	writel(backuAO_IR_DEC_REG1, AO_MF_IR_DEC_REG1);
@@ -276,7 +276,7 @@ void resume_remote_register(void)
 
 static int ir_remote_init_32k_mode(void)
 {
-	int tmp = 0;
+	int tmp __attribute__((unused)) = 0;
 	//volatile unsigned int status,data_value;
 	int val = readl(AO_RTI_PIN_MUX_REG);
 	writel((val | (1 << 0)), AO_RTI_PIN_MUX_REG);
