@@ -68,7 +68,7 @@ OBJS += lib/delay.o
 
 OBJS := $(OBJS:%=$(obj)/%)
 
-all : clean $(obj)/bl301.out $(obj)/bl301.bin
+all : $(obj)/bl301.bin
 
 $(obj)/bl301.bin: $(obj)/bl301.out
 	@echo "	OBJCOPY $@"
@@ -111,7 +111,7 @@ $(obj)/user_task.lds : user_task.lds
 	@$(CPP) $(CFLAGS) -P $< $@
 
 clean:
-	@-rm -f $(OBJS)
-	@-rm -rf $(obj)/
+	-rm -f $(OBJS)
+	-rm -rf $(obj)/
 
 -include $(wildcard $(obj)/*.d)

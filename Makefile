@@ -720,9 +720,6 @@ endif
 # Always append ALL so that arch config.mk's can add custom ones
 ALL-y += u-boot.srec u-boot.bin System.map binary_size_check
 ALL-y += u-boot.hex
-ifeq ($(CONFIG_NEED_BL301), y)
-ALL-y += bl301.bin
-endif
 ALL-y += fip.bin boot.bin
 ALL-$(CONFIG_ONENAND_U_BOOT) += u-boot-onenand.bin
 ifeq ($(CONFIG_SPL_FSL_PBL),y)
@@ -855,9 +852,9 @@ u-boot-comp.bin:u-boot.bin
 #	$(objtree)/tools/uclpack $< $@
 
 FIP_FOLDER := $(srctree)/fip
-ifeq ($(CONFIG_SUPPORT_CUSOTMER_BOARD), y) #SUPPORT_CUSOTMER_BOARD
+ifeq ($(CONFIG_SUPPORT_CUSOTMER_BOARD), y)
 FIP_FOLDER_SOC := $(srctree)/customer/board/$(BOARD)/fip/$(SOC)
-else #SUPPORT_CUSOTMER_BOARD
+else
 FIP_FOLDER_SOC := $(FIP_FOLDER)/$(SOC)
 endif #SUPPORT_CUSOTMER_BOARD
 
@@ -881,20 +878,12 @@ endif
 endif
 FIP_ARGS += --bl33 $(FIP_FOLDER_SOC)/bl33.bin
 
-.PHONY: fip.bin
 ifeq ($(CONFIG_NEED_BL301), y)
-fip.bin: tools prepare acs.bin bl301.bin
-else
-fip.bin: tools prepare acs.bin
-endif
-	$(Q)cp u-boot.bin $(FIP_FOLDER_SOC)/bl33.bin
-	@rm -f $(FIP_FOLDER_SOC)/fip.bin
-	$(Q)$(FIP_FOLDER)/fip_create ${FIP_ARGS} $(FIP_FOLDER_SOC)/fip.bin
-	$(Q)$(FIP_FOLDER)/fip_create --dump $(FIP_FOLDER_SOC)/fip.bin
+BL301_BIN := bl301.bin
 
-ifeq ($(CONFIG_NEED_BL301), y)
-.PHONY : bl301.bin
-bl301.bin: tools prepare acs.bin bl21.bin
+.PHONY : $(BL301_BIN)
+$(BL301_BIN): tools prepare acs.bin bl21.bin
+	@rm -rf $(buildtree)/scp_task/*
 	$(Q)$(MAKE) -C $(srctree)/$(CPUDIR)/${SOC}/firmware/scp_task
 	$(Q)cp $(buildtree)/scp_task/bl301.bin $(FIP_FOLDER_SOC)/bl301.bin -f
 	$(Q)$(FIP_FOLDER)/blx_fix.sh \
@@ -906,6 +895,13 @@ bl301.bin: tools prepare acs.bin bl21.bin
 		$(FIP_FOLDER_SOC)/bl30_new.bin \
 		bl30
 endif
+
+.PHONY: fip.bin
+fip.bin: tools prepare acs.bin $(BL301_BIN)
+	$(Q)cp u-boot.bin $(FIP_FOLDER_SOC)/bl33.bin
+	@rm -f $(FIP_FOLDER_SOC)/fip.bin
+	$(Q)$(FIP_FOLDER)/fip_create ${FIP_ARGS} $(FIP_FOLDER_SOC)/fip.bin
+	$(Q)$(FIP_FOLDER)/fip_create --dump $(FIP_FOLDER_SOC)/fip.bin
 
 .PHONY : acs.bin
 acs.bin: tools prepare u-boot.bin
@@ -943,23 +939,25 @@ endif
 	$(Q)$(FIP_FOLDER_SOC)/aml_encrypt_$(SOC) --bl3enc  --input $(FIP_FOLDER_SOC)/bl33.bin
 	$(Q)$(FIP_FOLDER_SOC)/aml_encrypt_$(SOC) --bl2sig  --input $(FIP_FOLDER_SOC)/bl2_new.bin   --output $(FIP_FOLDER_SOC)/bl2.n.bin.sig
 	$(Q)$(FIP_FOLDER_SOC)/aml_encrypt_$(SOC) --bootmk  --output $(FIP_FOLDER_SOC)/u-boot.bin \
-	--bl2   $(FIP_FOLDER_SOC)/bl2.n.bin.sig  --bl30  $(FIP_FOLDER_SOC)/bl30_new.bin.enc  \
-	--bl31  $(FIP_FOLDER_SOC)/bl31.$(BL3X_SUFFIX).enc  $(FIP_BL32_PROCESS) --bl33  $(FIP_FOLDER_SOC)/bl33.bin.enc
+		--bl2   $(FIP_FOLDER_SOC)/bl2.n.bin.sig  --bl30  $(FIP_FOLDER_SOC)/bl30_new.bin.enc  \
+		--bl31  $(FIP_FOLDER_SOC)/bl31.$(BL3X_SUFFIX).enc  $(FIP_BL32_PROCESS) --bl33  $(FIP_FOLDER_SOC)/bl33.bin.enc
 	@rm -f $(FIP_FOLDER_SOC)/bl*.enc $(FIP_FOLDER_SOC)/bl2*.sig
 else
-	$(Q)$(FIP_FOLDER_SOC)/aml_encrypt_$(SOC) --bootsig --input $(FIP_FOLDER_SOC)/boot_new.bin --output $(FIP_FOLDER_SOC)/u-boot.bin
+	$(Q)$(FIP_FOLDER_SOC)/aml_encrypt_$(SOC) --bootsig --input $(FIP_FOLDER_SOC)/boot_new.bin  --output $(FIP_FOLDER_SOC)/u-boot.bin
 endif
 
 ifeq ($(CONFIG_AML_CRYPTO_UBOOT), y)
 ifeq ($(SOC),gxl)
-	$(Q)$(FIP_FOLDER_SOC)/aml_encrypt_$(SOC) --efsgen --amluserkey $(srctree)/$(BOARDDIR)/aml-user-key.sig \
-			--output $(FIP_FOLDER_SOC)/u-boot.bin.encrypt.efuse
+	$(Q)$(FIP_FOLDER_SOC)/aml_encrypt_$(SOC) --efsgen  --amluserkey $(srctree)/$(BOARDDIR)/aml-user-key.sig \
+		--output $(FIP_FOLDER_SOC)/u-boot.bin.encrypt.efuse
 endif
-	$(Q)$(FIP_FOLDER_SOC)/aml_encrypt_$(SOC) --bootsig --input $(FIP_FOLDER_SOC)/u-boot.bin --amluserkey $(srctree)/$(BOARDDIR)/aml-user-key.sig \
-	 --aeskey enable --output $(FIP_FOLDER_SOC)/u-boot.bin.encrypt
+	$(Q)$(FIP_FOLDER_SOC)/aml_encrypt_$(SOC) --bootsig --input $(FIP_FOLDER_SOC)/u-boot.bin \
+		--amluserkey $(srctree)/$(BOARDDIR)/aml-user-key.sig --aeskey enable \
+		--output $(FIP_FOLDER_SOC)/u-boot.bin.encrypt
 endif
 ifeq ($(CONFIG_AML_CRYPTO_IMG), y)
-	$(Q)$(FIP_FOLDER_SOC)/aml_encrypt_$(SOC) --imgsig --input $(srctree)/$(BOARDDIR)/boot.img --amluserkey $(srctree)/$(BOARDDIR)/aml-user-key.sig --output $(FIP_FOLDER_SOC)/boot.img.encrypt
+	$(Q)$(FIP_FOLDER_SOC)/aml_encrypt_$(SOC) --imgsig  --input $(srctree)/$(BOARDDIR)/boot.img --amluserkey $(srctree)/$(BOARDDIR)/aml-user-key.sig \
+		--output $(FIP_FOLDER_SOC)/boot.img.encrypt
 	@cp -f $(FIP_FOLDER_SOC)/boot.img.encrypt $(FIP_FOLDER)/boot.img.encrypt
 endif
 	@cp -f $(FIP_FOLDER_SOC)/u-boot.* $(FIP_FOLDER)/
