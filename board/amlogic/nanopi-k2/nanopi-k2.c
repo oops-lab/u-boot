@@ -432,7 +432,9 @@ U_BOOT_CMD(hdmi_init, CONFIG_SYS_MAXARGS, 0, do_hdmi_init,
 #endif
 #ifdef CONFIG_BOARD_LATE_INIT
 int board_late_init(void){
+#ifdef CONFIG_STORE_COMPATIBLE
 	int ret;
+#endif
 
 	//update env before anyone using it
 	run_command("get_rebootmode; echo reboot_mode=${reboot_mode}; "\
@@ -446,7 +448,9 @@ int board_late_init(void){
 	run_command("cvbs init;hdmitx hpd", 0);
 	run_command("vout output $outputmode", 0);
 #endif
+
 	/*add board late init function here*/
+#ifdef CONFIG_STORE_COMPATIBLE
 	ret = run_command("store dtb read $dtb_mem_addr", 1);
 	if (ret) {
 		printf("%s(): [store dtb read $dtb_mem_addr] fail\n", __func__);
@@ -460,6 +464,8 @@ int board_late_init(void){
 		}
 		#endif
 	}
+#endif
+
 #ifdef CONFIG_AML_V2_FACTORY_BURN
 	aml_try_factory_sdcard_burning(0, gd->bd);
 #endif// #ifdef CONFIG_AML_V2_FACTORY_BURN
