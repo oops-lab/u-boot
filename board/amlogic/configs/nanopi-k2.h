@@ -280,14 +280,15 @@
 
 /* Net */
 #if defined(CONFIG_CMD_NET)
-	#define CONFIG_DESIGNWARE_ETH   1
-	#define CONFIG_PHYLIB           1
+//	#define CONFIG_DESIGNWARE_ETH   1
+//	#define CONFIG_PHYLIB           1
+	#define CONFIG_AML_ETHERNET     1
 	#define CONFIG_NET_MULTI        1
 	#define CONFIG_CMD_PING         1
 	#define CONFIG_CMD_DHCP         1
 	#define CONFIG_CMD_RARP         1
 	#define CONFIG_HOSTNAME         nanopi-k2-u1
-	#define CONFIG_ETHADDR          00:15:18:01:81:31
+	#define CONFIG_ETHADDR          00:16:0F:A0:10:22
 	#define CONFIG_IPADDR           192.168.102.39	/* Our ip address */
 	#define CONFIG_GATEWAYIP        192.168.102.1	/* Gateway ip address */
 	#define CONFIG_SERVERIP         192.168.102.30	/* Tftp server ip address */
