@@ -269,14 +269,19 @@ typedef struct amlogic_usb_config{
 #define BC_MODE_DCP		2	/* Dedicated Charging Port */
 #define BC_MODE_CDP		3	/* Charging Downstream Port */
 
-}amlogic_usb_config_t;
+} amlogic_usb_config_t;
 
 #define BOARD_USB_MODE_HOST	0
 #define BOARD_USB_MODE_SLAVE	1
 #define BOARD_USB_MODE_CHARGER	2
 #define BOARD_USB_MODE_MAX	3
-amlogic_usb_config_t * board_usb_start(int mode,int index);
-int board_usb_stop(int mode,int index);
-void board_usb_init(amlogic_usb_config_t * usb_cfg,int mode);
+amlogic_usb_config_t *board_usb_start(int mode, int index);
+int board_usb_stop(int mode, int index);
+#if defined(CONFIG_USB_GADGET)
+void amlogic_usb_init(amlogic_usb_config_t *usb_cfg, int mode);
+#else
+void board_usb_init(amlogic_usb_config_t *usb_cfg, int mode);
+#endif
 int get_usb_count(void);
+
 #endif //__ARCH_ARM_MESON_USB_H_U_BOOT__

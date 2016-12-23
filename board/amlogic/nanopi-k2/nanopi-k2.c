@@ -279,17 +279,6 @@ int board_early_init_f(void)
 #ifdef CONFIG_USB_DWC_OTG_HCD
 #include <asm/arch/usb.h>
 
-/*
-static void gpio_set_vbus_power(char is_power_on)
-{
-	if (is_power_on) {
-		setbits_le32(PREG_PAD_GPIO0_EN_N, 1<<24);
-		setbits_le32(PREG_PAD_GPIO0_O, 1<<24);
-	} else {
-	}
-}
-*/
-
 static int usb_charging_detect_call_back(char bc_mode)
 {
 	switch (bc_mode) {
@@ -314,32 +303,40 @@ static int usb_charging_detect_call_back(char bc_mode)
 //USB_PHY_CLOCK_SEL_M3_DDR_PLL   @ 27 (336MHz); @Rev2663 M3 SKT board DDR is 336MHz
 //                                 43 (528MHz); M3 SKT board DDR not stable for 528MHz
 
-struct amlogic_usb_config g_usb_config_gx_skt_a = {
-	USB_PHY_CLK_SEL_XTAL,
-	1, //PLL divider: (clock/12 -1)
-	CONFIG_M8_USBPORT_BASE_A,
-	USB_ID_MODE_SW_HOST,
-	NULL,//gpio_set_vbus_power, //set_vbus_power
-	NULL,
+struct amlogic_usb_config usb_config_a = {
+	.clk_selecter	= USB_PHY_CLK_SEL_XTAL,
+	.pll_divider	= 1,	// (clock/12 - 1)
+	.base_addr		= CONFIG_M8_USBPORT_BASE_A,
+	.id_mode		= USB_ID_MODE_SW_HOST,
+	.set_vbus_power	= NULL,
 };
 
-struct amlogic_usb_config g_usb_config_gx_skt_b = {
-	USB_PHY_CLK_SEL_XTAL,
-	1, //PLL divider: (clock/12 -1)
-	CONFIG_M8_USBPORT_BASE_B,
-	USB_ID_MODE_SW_HOST,
-	NULL,//gpio_set_vbus_power, //set_vbus_power
-	NULL,
+struct amlogic_usb_config usb_config_b = {
+	.clk_selecter	= USB_PHY_CLK_SEL_XTAL,
+	.pll_divider	= 1,
+	.base_addr		= CONFIG_M8_USBPORT_BASE_B,
+	.id_mode		= USB_ID_MODE_SW_HOST,
+	.set_vbus_power	= NULL,
 };
 
-struct amlogic_usb_config g_usb_config_gx_skt_h = {
-	USB_PHY_CLK_SEL_XTAL,
-	1, //PLL divider: (clock/12 -1)
-	CONFIG_M8_USBPORT_BASE_A,
-	USB_ID_MODE_HARDWARE,
-	NULL,//gpio_set_vbus_power, //set_vbus_power
-	usb_charging_detect_call_back,
+struct amlogic_usb_config usb_config_h = {
+	.clk_selecter	= USB_PHY_CLK_SEL_XTAL,
+	.pll_divider	= 1,
+	.base_addr		= CONFIG_M8_USBPORT_BASE_A,
+	.id_mode		= USB_ID_MODE_HARDWARE,
+	.set_vbus_power	= NULL,
+	.battery_charging_det_cb	= usb_charging_detect_call_back,
 };
+
+struct amlogic_usb_config *usb_get_config(int port)
+{
+	if (port == 0)
+		return &usb_config_a;
+	else if (port == 1)
+		return &usb_config_b;
+
+	return NULL;
+}
 #endif /* CONFIG_USB_DWC_OTG_HCD */
 
 #ifdef CONFIG_AML_HDMITX20
@@ -370,9 +367,9 @@ int board_init(void)
 	clrbits_le32(P_AO_GPIO_O_EN_N, ((1<<2)|(1<<18)));
 
 #ifdef CONFIG_USB_DWC_OTG_HCD
-	board_usb_init(&g_usb_config_gx_skt_a, BOARD_USB_MODE_HOST);
-	board_usb_init(&g_usb_config_gx_skt_b, BOARD_USB_MODE_HOST);
-	board_usb_init(&g_usb_config_gx_skt_h, BOARD_USB_MODE_CHARGER);
+	amlogic_usb_init(&usb_config_a, BOARD_USB_MODE_SLAVE);
+	amlogic_usb_init(&usb_config_b, BOARD_USB_MODE_HOST);
+	amlogic_usb_init(&usb_config_h, BOARD_USB_MODE_CHARGER);
 #endif
 
 #ifdef CONFIG_AML_VPU

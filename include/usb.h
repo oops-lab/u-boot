@@ -203,7 +203,9 @@ extern void udc_disconnect(void);
  * @param index USB controller number
  * @param init initializes controller as USB host or device
  */
-//int board_usb_init(int index, enum usb_init_type init);
+#if defined(CONFIG_USB_GADGET)
+int board_usb_init(int index, enum usb_init_type init);
+#endif
 
 /*
  * can be used to clean up after failed USB initialization attempt

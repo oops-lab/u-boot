@@ -24,7 +24,6 @@
 #include <asm/arch/usb.h>
 #include <asm/arch/romboot.h>
 
-
 #ifdef CONFIG_USB_DWC_OTG_HCD
 static amlogic_usb_config_t * g_usb_cfg[BOARD_USB_MODE_MAX][USB_PHY_PORT_MAX];
 
@@ -34,6 +33,7 @@ static char * g_clock_src_name_m8[]={
 
 extern void _udelay(unsigned long usec);
 extern void _mdelay(unsigned long usec);
+
 //static int reset_count = 0;
 //int set_usb_phy_clk(struct lm_device * plmdev,int is_enable)
 //{
@@ -80,6 +80,7 @@ static int set_usb_phy_clock(amlogic_usb_config_t * usb_cfg)
 	_udelay(time_dly);
 	return 0;
 }
+
 //call after set clock
 void set_usb_phy_power(amlogic_usb_config_t * usb_cfg,int is_on)
 {
@@ -278,8 +279,13 @@ int board_usb_stop(int mode,int index)
 	return 0;
 }
 
-int usb_index = 0;
+static int usb_index = 0;
+
+#if defined(CONFIG_USB_GADGET)
+void amlogic_usb_init(amlogic_usb_config_t * usb_cfg,int mode)
+#else
 void board_usb_init(amlogic_usb_config_t * usb_cfg,int mode)
+#endif
 {
 
 	if (mode < 0 || mode >= BOARD_USB_MODE_MAX || !usb_cfg)
@@ -290,9 +296,11 @@ void board_usb_init(amlogic_usb_config_t * usb_cfg,int mode)
 			return;
 		g_usb_cfg[mode][usb_index] = usb_cfg;
 		usb_index++;
-	}else
+	} else
 		g_usb_cfg[mode][0] = usb_cfg;
-	printf("register usb cfg[%d][%d] = %p\n",mode,(mode==BOARD_USB_MODE_HOST)?usb_index:0,usb_cfg);
+
+	printf("register usb cfg[%d][%d] = %p\n",
+			mode, (mode == BOARD_USB_MODE_HOST) ? usb_index : 0, usb_cfg);
 }
 
 int get_usb_count(void)

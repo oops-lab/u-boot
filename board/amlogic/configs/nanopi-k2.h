@@ -260,6 +260,15 @@
 	#define CONFIG_USB_DWC_OTG_294  1
 #endif	/* CONFIG_CMD_USB */
 
+/* Gadget */
+#define CONFIG_USB_GADGET           1
+#if defined(CONFIG_USB_GADGET)
+	#define CONFIG_USB_GADGET_S3C_UDC_OTG   1
+	#define CONFIG_USB_GADGET_DUALSPEED     1
+	#define CONFIG_USB_GADGET_VBUS_DRAW     2
+	#define CONFIG_SYS_CACHELINE_SIZE       64
+#endif
+
 /* Facotry usb/sdcard burning config */
 #if defined(CONFIG_STORE_COMPATIBLE)
 #define CONFIG_AML_V2_FACTORY_BURN              1  // support facotry usb burning
