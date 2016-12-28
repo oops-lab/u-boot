@@ -67,7 +67,11 @@ static struct usb_endpoint_descriptor fs_ep_in = {
 	.bDescriptorType    = USB_DT_ENDPOINT,
 	.bEndpointAddress   = USB_DIR_IN,
 	.bmAttributes       = USB_ENDPOINT_XFER_BULK,
+#if defined(CONFIG_USB_MAX_PACKET_SIZE)
+	.wMaxPacketSize     = CONFIG_USB_MAX_PACKET_SIZE,
+#else
 	.wMaxPacketSize     = TX_ENDPOINT_MAXIMUM_PACKET_SIZE,
+#endif
 	.bInterval          = 0x00,
 };
 

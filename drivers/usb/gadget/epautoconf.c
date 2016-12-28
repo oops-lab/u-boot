@@ -166,8 +166,13 @@ static int ep_matches(
 		int size = ep->maxpacket;
 
 		/* min() doesn't work on bitfields with gcc-3.5 */
+#if defined(CONFIG_USB_MAX_PACKET_SIZE)
+		if (size > CONFIG_USB_MAX_PACKET_SIZE)
+			size = CONFIG_USB_MAX_PACKET_SIZE;
+#else
 		if (size > 64)
 			size = 64;
+#endif
 		put_unaligned(cpu_to_le16(size), &desc->wMaxPacketSize);
 	}
 	return 1;
