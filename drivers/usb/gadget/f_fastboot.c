@@ -432,14 +432,17 @@ static void cb_getvar(struct usb_ep *ep, struct usb_request *req)
 static unsigned int rx_bytes_expected(struct usb_ep *ep)
 {
 	int rx_remain = download_size - download_bytes;
+#ifndef CONFIG_USB_GADGET_S3C_UDC_OTG
 	unsigned int rem;
 	unsigned int maxpacket = ep->maxpacket;
+#endif
 
 	if (rx_remain <= 0)
 		return 0;
 	else if (rx_remain > EP_BUFFER_SIZE)
 		return EP_BUFFER_SIZE;
 
+#ifndef CONFIG_USB_GADGET_S3C_UDC_OTG
 	/*
 	 * Some controllers e.g. DWC3 don't like OUT transfers to be
 	 * not ending in maxpacket boundary. So just make them happy by
@@ -449,11 +452,12 @@ static unsigned int rx_bytes_expected(struct usb_ep *ep)
 	rem = rx_remain % maxpacket;
 	if (rem > 0)
 		rx_remain = rx_remain + (maxpacket - rem);
+#endif
 
 	return rx_remain;
 }
 
-#define BYTES_PER_DOT	0x20000
+#define BYTES_PER_DOT	0x80000
 static void rx_handler_dl_image(struct usb_ep *ep, struct usb_request *req)
 {
 	char response[FASTBOOT_RESPONSE_LEN];

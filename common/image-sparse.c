@@ -347,7 +347,7 @@ int store_sparse_image(sparse_storage_t *storage,
 			buffer_blk_cnt = buffer->length / storage->block_sz;
 
 			ret = storage->write(storage, storage_priv,
-					     start + total_blocks,
+					     start + total_blocks + skipped,
 					     buffer_blk_cnt,
 					     buffer->data);
 			if (ret < 0) {

@@ -123,6 +123,7 @@
 	"dtb_name=nanopi-k2.dtb\0" \
 	"hdmimode=1080p60hz\0" \
 	"cvbsmode=576cvbs\0" \
+	"serial#=fe2017a905b20003\0" \
 	"initrd_high=0x40000000\0" \
 	"initrd_start=0x39000000\0" \
 	"initrd_size=0x200000\0" \
@@ -190,9 +191,11 @@
 #define CONFIG_CMD_ITEST            1
 //#define CONFIG_CMD_MEMTEST          1
 #define CONFIG_CMD_NET              1
-//#define CONFIG_CMD_USB_MASS_STORAGE 1
-//#define CONFIG_CMD_FASTBOOT         1
+#define CONFIG_USBDOWNLOAD_GADGET   1
+#define CONFIG_CMD_FASTBOOT         1
 #define CONFIG_CMD_USB              1
+#define CONFIG_CMD_PART             1
+#define CONFIG_PARTITION_UUIDS      1
 
 /* File system */
 #define CONFIG_PARTITIONS           1
@@ -222,7 +225,7 @@
 
 #define CONFIG_SYS_MMC_ENV_DEV      0	/* 0: SD, 1: eMMC */
 #define CONFIG_ENV_SIZE             ( 64 * 1024)
-#define CONFIG_ENV_OFFSET           (736 * 1024)
+#define CONFIG_ENV_OFFSET           (800 * 1024)
 
 #if defined(CONFIG_STORE_COMPATIBLE) && \
    (defined(CONFIG_ENV_IS_IN_AMLNAND) || defined(CONFIG_ENV_IS_IN_MMC))
@@ -267,6 +270,23 @@
 	#define CONFIG_USB_GADGET_DUALSPEED     1
 	#define CONFIG_USB_GADGET_VBUS_DRAW     2
 	#define CONFIG_SYS_CACHELINE_SIZE       64
+	#define CONFIG_USB_MAX_PACKET_SIZE      (0x0200)
+#endif
+
+#if defined(CONFIG_USBDOWNLOAD_GADGET)
+	#define CONFIG_G_DNL_VENDOR_NUM     0x18d1
+	#define CONFIG_G_DNL_PRODUCT_NUM    0x0002
+	#define CONFIG_G_DNL_MANUFACTURER   "FriendlyElec Technology Co., Ltd."
+#endif
+
+/* Android fastboot */
+#if defined(CONFIG_CMD_FASTBOOT)
+	#define CONFIG_FASTBOOT_BUF_ADDR    (0x18000000)
+	#define CONFIG_FASTBOOT_BUF_SIZE    (0x20000000)
+	#define CONFIG_FASTBOOT_FLASH       1
+	#if defined(CONFIG_FASTBOOT_FLASH)
+		#define CONFIG_FASTBOOT_FLASH_MMC_DEV   0
+	#endif
 #endif
 
 /* Facotry usb/sdcard burning config */

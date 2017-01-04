@@ -12,10 +12,15 @@
 #include <g_dnl.h>
 #include <usb.h>
 
+void __weak board_init_partition(char *osname) {
+	// nothing here
+}
+
 static int do_fastboot(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 {
 	int controller_index;
 	char *usb_controller;
+	char *osname;
 	int ret;
 
 	if (argc < 2)
@@ -23,6 +28,12 @@ static int do_fastboot(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 
 	usb_controller = argv[1];
 	controller_index = simple_strtoul(usb_controller, NULL, 0);
+
+	osname = argv[2];
+	if (!osname)
+		osname = "android";
+
+	board_init_partition(osname);
 
 	ret = board_usb_init(controller_index, USB_INIT_DEVICE);
 	if (ret) {
@@ -61,8 +72,8 @@ exit:
 }
 
 U_BOOT_CMD(
-	fastboot, 2, 1, do_fastboot,
+	fastboot, 3, 1, do_fastboot,
 	"use USB Fastboot protocol",
-	"<USB_controller>\n"
+	"<USB_controller> [android|linux]\n"
 	"    - run as a fastboot usb device"
 );

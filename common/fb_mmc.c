@@ -15,7 +15,7 @@
 #include <mmc.h>
 #include <div64.h>
 
-#ifndef CONFIG_FASTBOOT_GPT_NAME
+#if defined(CONFIG_EFI_PARTITION) && !defined(CONFIG_FASTBOOT_GPT_NAME)
 #define CONFIG_FASTBOOT_GPT_NAME GPT_ENTRY_NAME
 #endif
 
@@ -25,11 +25,22 @@ struct fb_mmc_sparse {
 	block_dev_desc_t	*dev_desc;
 };
 
-static int get_partition_info_efi_by_name_or_alias(block_dev_desc_t *dev_desc,
+int __weak board_get_part_info(block_dev_desc_t *dev_desc, const char *name,
+        disk_partition_t *info)
+{
+	return -1;
+}
+
+static int part_get_info_by_name_or_alias(block_dev_desc_t *dev_desc,
 		const char *name, disk_partition_t *info)
 {
 	int ret;
 
+	ret = board_get_part_info(dev_desc, name, info);
+	if (!ret)
+		return 0;
+
+#ifdef CONFIG_EFI_PARTITION
 	ret = get_partition_info_efi_by_name(dev_desc, name, info);
 	if (ret) {
 		/* strlen("fastboot_partition_alias_") + 32(part_name) + 1 */
@@ -44,9 +55,10 @@ static int get_partition_info_efi_by_name_or_alias(block_dev_desc_t *dev_desc,
 			ret = get_partition_info_efi_by_name(dev_desc,
 					aliased_part_name, info);
 	}
+#endif
+
 	return ret;
 }
-
 
 static int fb_mmc_sparse_write(struct sparse_storage *storage,
 			       void *priv,
@@ -113,6 +125,7 @@ void fb_mmc_flash_write(const char *cmd, void *download_buffer,
 		return;
 	}
 
+#ifdef CONFIG_EFI_PARTITION
 	if (strcmp(cmd, CONFIG_FASTBOOT_GPT_NAME) == 0) {
 		printf("%s: updating MBR, Primary and Backup GPT(s)\n",
 		       __func__);
@@ -131,7 +144,10 @@ void fb_mmc_flash_write(const char *cmd, void *download_buffer,
 		printf("........ success\n");
 		fastboot_okay(response_str, "");
 		return;
-	} else if (get_partition_info_efi_by_name_or_alias(dev_desc, cmd, &info)) {
+	}
+#endif
+
+	if (part_get_info_by_name_or_alias(dev_desc, cmd, &info)) {
 		error("cannot find partition: '%s'\n", cmd);
 		fastboot_fail(response_str, "cannot find partition");
 		return;
@@ -185,7 +201,7 @@ void fb_mmc_erase(const char *cmd, char *response)
 		return;
 	}
 
-	ret = get_partition_info_efi_by_name_or_alias(dev_desc, cmd, &info);
+	ret = part_get_info_by_name_or_alias(dev_desc, cmd, &info);
 	if (ret) {
 		error("cannot find partition: '%s'", cmd);
 		fastboot_fail(response_str, "cannot find partition");
@@ -205,7 +221,7 @@ void fb_mmc_erase(const char *cmd, char *response)
 	       blks_start, blks_start + blks_size);
 
 	blks = dev_desc->block_erase(dev_desc->dev, blks_start, blks_size);
-	if (blks != blks_size) {
+	if (blks && blks != blks_size) {
 		error("failed erasing from device %d", dev_desc->dev);
 		fastboot_fail(response_str, "failed erasing from device");
 		return;

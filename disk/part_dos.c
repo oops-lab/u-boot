@@ -224,6 +224,10 @@ static int get_partition_info_extended (block_dev_desc_t *dev_desc, int ext_part
 					sprintf ((char *)info->name, "docd%c%d",
 						'a' + dev_desc->dev, part_num);
 					break;
+				case IF_TYPE_MMC:
+					sprintf ((char *)info->name, "mmcblk%dp%d",
+						dev_desc->dev, part_num);
+					break;
 				default:
 					sprintf ((char *)info->name, "xx%c%d",
 						'a' + dev_desc->dev, part_num);
