@@ -191,6 +191,10 @@ defined(CONFIG_MACH_SUN50I)
 #define SUNXI_SS_BOND_ID_A31S		5
 
 #ifndef __ASSEMBLY__
+#ifdef CONFIG_MACH_SUN8I_H3_NANOPI
+enum NANOPI_H3_BOARDTYPE {NANOPI_M1 = 0, NANOPI_NEO, NANOPI_NEO_AIR, NANOPI_M1_PLUS};
+int nanopi_h3_spl_get_board(void);
+#endif
 void sunxi_board_init(void);
 void sunxi_reset(void);
 int sunxi_get_ss_bonding_id(void);

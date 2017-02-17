@@ -36,8 +36,24 @@ struct dram_para {
 	const u8 ac_delays[31];
 };
 
+static int nanopi_h3_get_dram_clk(void)
+{
+	int nanopi_h3_dram_clk[4] = {
+	576 /* NanoPi-M1 */,
+	408 /* NanoPi-NEO */,
+	408 /* NanoPi-NEO-Air */,
+	576 /* NanoPi-M1-Plus */,
+	};
+	int boardtype = nanopi_h3_spl_get_board();
+	return nanopi_h3_dram_clk[boardtype];
+}
+
 static inline int ns_to_t(int nanoseconds)
 {
+#ifdef CONFIG_MACH_SUN8I_H3_NANOPI
+#undef CONFIG_DRAM_CLK
+	int CONFIG_DRAM_CLK = nanopi_h3_get_dram_clk();
+#endif
 	const unsigned int ctrl_freq = CONFIG_DRAM_CLK / 2;
 
 	return DIV_ROUND_UP(ctrl_freq * nanoseconds, 1000);
@@ -222,6 +238,10 @@ static void mctl_set_timing_params(uint16_t socid, struct dram_para *para)
 	u8 t_rdata_en	= 4;
 	u8 wr_latency	= 2;
 
+#ifdef CONFIG_MACH_SUN8I_H3_NANOPI
+#undef CONFIG_DRAM_CLK
+	int CONFIG_DRAM_CLK = nanopi_h3_get_dram_clk();
+#endif
 	u32 tdinit0	= (500 * CONFIG_DRAM_CLK) + 1;		/* 500us */
 	u32 tdinit1	= (360 * CONFIG_DRAM_CLK) / 1000 + 1;	/* 360ns */
 	u32 tdinit2	= (200 * CONFIG_DRAM_CLK) + 1;		/* 200us */
@@ -383,6 +403,10 @@ static void mctl_sys_init(uint16_t socid, struct dram_para *para)
 	clrbits_le32(&ccm->dram_clk_cfg, CCM_DRAMCLK_CFG_RST);
 	udelay(1000);
 
+#ifdef CONFIG_MACH_SUN8I_H3_NANOPI
+#undef CONFIG_DRAM_CLK
+	int CONFIG_DRAM_CLK = nanopi_h3_get_dram_clk();
+#endif
 	if (socid == SOCID_A64) {
 		clock_set_pll11(CONFIG_DRAM_CLK * 2 * 1000000, false);
 		clrsetbits_le32(&ccm->dram_clk_cfg,

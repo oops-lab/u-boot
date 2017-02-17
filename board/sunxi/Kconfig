@@ -130,6 +130,10 @@ config MACH_SUN50I
 endchoice
 
 # The sun8i SoCs share a lot, this helps to avoid a lot of "if A23 || A33"
+config MACH_SUN8I_H3_NANOPI
+	bool "sun8i (Allwinner H3 Nanopi)"
+	default n
+
 config MACH_SUN8I
 	bool
 	default y if MACH_SUN8I_A23 || MACH_SUN8I_A33 || MACH_SUN8I_H3 || MACH_SUN8I_A83T

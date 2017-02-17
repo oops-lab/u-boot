@@ -477,6 +477,39 @@ void i2c_init_board(void)
 }
 
 #ifdef CONFIG_SPL_BUILD
+#ifdef CONFIG_MACH_SUN8I_H3_NANOPI
+int nanopi_h3_spl_get_board(void)
+{
+	char pin_label[16];
+	char pin[2][8] = {
+		"PC4",
+		"PC7",
+	};
+	int ret = -1,boardtype = 0;
+	int i, pin_num, id_pin, pin_value;
+
+	pin_num = sizeof(pin) / sizeof(pin[0]);
+	for (i=0; i<pin_num; i++) {
+		memset(pin_label, 0, sizeof(pin_label));
+		sprintf(pin_label, "boardid_%d", i);
+		id_pin = sunxi_name_to_gpio(pin[i]);
+		ret = gpio_request(id_pin, pin_label);
+		if (!ret) {
+			gpio_direction_input(id_pin);
+			pin_value = gpio_get_value(id_pin);
+			boardtype |= pin_value<<i;
+			gpio_free(id_pin);
+		}
+	}	
+	if (boardtype<4) {
+		return boardtype;
+	} else {
+		printf("UNKNOWN BOARDTYPE\n");
+		hang();
+	}
+}
+#endif
+
 void sunxi_board_init(void)
 {
 	int power_failed = 0;
@@ -540,6 +573,16 @@ void sunxi_board_init(void)
 	power_failed |= axp_set_sw(IS_ENABLED(CONFIG_AXP_SW_ON));
 #endif
 #endif
+	int boardtype = -1;
+	char board[4][16] = {
+		"Nanopi M1",			
+		"Nanopi NEO",
+		"Nanopi NEO Air",
+		"Nanopi M1 Plus",
+	};
+	if ((boardtype = nanopi_h3_spl_get_board()) >= 0) {
+		printf("BOARD: %s\n", board[boardtype]);
+	}
 	printf("DRAM:");
 	ramsize = sunxi_dram_init();
 	printf(" %d MiB\n", (int)(ramsize >> 20));
