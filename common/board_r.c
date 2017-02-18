@@ -717,6 +717,56 @@ static int initr_kbd(void)
 }
 #endif
 
+#ifdef CONFIG_MACH_SUN8I_H3_NANOPI
+#include <asm/arch/gpio.h>
+#include <asm/gpio.h>
+int nanopi_h3_get_board(void)
+{
+	char pin_label[16];
+	char pin[2][8] = {
+		"PC4",
+		"PC7",
+	};
+	int ret = -1,boardtype = 0;
+	int i, pin_num, id_pin, pin_value;
+
+	pin_num = sizeof(pin) / sizeof(pin[0]);
+	for (i=0; i<pin_num; i++) {
+		memset(pin_label, 0, sizeof(pin_label));
+		sprintf(pin_label, "boardid_%d", i);
+		id_pin = sunxi_name_to_gpio(pin[i]);
+		ret = gpio_request(id_pin, pin_label);
+		if (!ret) {
+			gpio_direction_input(id_pin);
+			pin_value = gpio_get_value(id_pin);
+			boardtype |= pin_value<<i;
+			gpio_free(id_pin);
+		}
+	}	
+	if (boardtype<4) {
+		return boardtype;
+	} else {
+		printf("UNKNOWN BOARDTYPE\n");
+		hang();
+	}
+}
+
+static int setup_env_boardtype(void)
+{
+	int boardtype = -1;
+	char board[4][16] = {
+		"nanopi-m1",			
+		"nanopi-neo",
+		"nanopi-neo-air",
+		"nanopi-m1-plus",
+	};
+	boardtype = nanopi_h3_get_board();
+	setenv("board", board[boardtype]);
+	return 0;
+}
+
+#endif
+
 static int run_main_loop(void)
 {
 #ifdef CONFIG_SANDBOX
@@ -941,6 +991,9 @@ static init_fnc_t init_sequence_r[] = {
 #endif
 #if defined(CONFIG_SPARC)
 	prom_init,
+#endif
+#if defined(CONFIG_MACH_SUN8I_H3_NANOPI)
+	setup_env_boardtype,
 #endif
 	run_main_loop,
 };
