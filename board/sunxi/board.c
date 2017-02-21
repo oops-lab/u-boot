@@ -671,6 +671,7 @@ static void setup_environment(const void *fdt)
 	uint8_t mac_addr[6];
 	char ethaddr[16];
 	int i, ret;
+	char mac_node[32];
 
 	ret = sunxi_get_sid(sid);
 	if (ret == 0 && sid[0] != 0) {
@@ -717,6 +718,13 @@ static void setup_environment(const void *fdt)
 			mac_addr[5] = (sid[3] >>  0) & 0xff;
 
 			eth_setenv_enetaddr(ethaddr, mac_addr);
+#ifdef CONFIG_MACH_SUN8I_H3_NANOPI
+			sprintf(mac_node, "[%x %x %x %x %x %x]", \
+								mac_addr[0], mac_addr[1], \
+								mac_addr[2], mac_addr[3], \
+								mac_addr[4], mac_addr[5]);
+			setenv("mac_node", mac_node);
+#endif
 		}
 
 		if (!getenv("serial#")) {
