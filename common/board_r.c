@@ -514,12 +514,11 @@ static int initr_env(void)
 #elif defined(CONFIG_MACH_SUN8I_H5_NANOPI)
 #define SPL_ADDR		0x10000
 #endif
+static int boot_source;
 static int init_env_boot_mmc(void)
 {
 	/* initialize environment boot_mmc, must after initr_env */
 	char boot_mmc_buf[24] = {0};
-	int boot_source;
-
 	boot_source = readb(SPL_ADDR + 0x28);
 
 	if (boot_source == SUNXI_BOOTED_FROM_MMC0) {
@@ -760,24 +759,88 @@ int nanopi_read_gpio(void)
 	}
 	return gpio;
 }
+
+int nanopi_read_extra_gpio(void)
+{
+	int ret = -1, gpio = 0;
+	char pin_label[16];
+	char pin[1][8] = {
+		"PC6",
+	};	
+	int i, pin_num, id_pin, pin_value, old_func;
+	
+	pin_num = sizeof(pin) / sizeof(pin[0]);
+	for (i=0; i<pin_num; i++) {
+		memset(pin_label, 0, sizeof(pin_label));
+		sprintf(pin_label, "boardid_%d", i);
+		id_pin = sunxi_name_to_gpio(pin[i]);
+		ret = gpio_request(id_pin, pin_label);
+		if (!ret) {
+			old_func = sunxi_gpio_get_cfgpin(id_pin);	// store func
+			gpio_direction_input(id_pin);
+			sunxi_gpio_set_pull(id_pin, SUNXI_GPIO_PULL_DOWN);
+			mdelay(2);
+			pin_value = gpio_get_value(id_pin);
+			gpio |= pin_value<<i;
+			sunxi_gpio_set_cfgpin(id_pin, old_func);    // resotre func
+			gpio_free(id_pin);
+		} else {
+			printf("fail to request gpio %d\n", id_pin);
+			hang(); 
+		}
+	}
+	return gpio;
+}
+
 int nanopi_get_board(void)
 {
 	int ret = -1, boardtype = -1, cputype = -1;
 	unsigned int sid[4];
+	//int extra_gpio;
+	int has_emmc = 0;
+	const char *model = fdt_getprop(gd->fdt_blob, 0, "model", NULL);
 	
 	ret = sunxi_get_sid(sid);
 	if (ret == 0 && sid[0] != 0) {
 		cputype = sid[0] & 0xff;
 	}
+	printf("cputype is 0x%x\n", cputype);
 	switch (cputype) {
 	case CPU_TYPE_H2_1:
 	case CPU_TYPE_H2_2:
 		boardtype = BOARD_TYPE_NANOPI_DUO;
 		setenv("cpu", "h2-plus");
 		break;
-	default:					// H3 & H5
+	case CPU_TYPE_H5:			// don't really rely on this(H5-CPUID=0x01?)
 		boardtype = nanopi_read_gpio();
-		setenv("cpu", "h3");	// H5 doesn't need this env
+		setenv("cpu", "h5");	// nowhere is using env-cpu=h5, so it doesn't matter.
+		break;
+	default:					// dafault is H3.boot.src will use env-cpu=h3
+		boardtype = nanopi_read_gpio();
+		setenv("cpu", "h3");	
+		// extra_gpio = nanopi_read_extra_gpio(); 
+		if (!strcasecmp(model, "NanoPi H3")) { // make sure this is really a H3-Uboot
+			switch (boardtype) {
+			case BOARD_TYPE_NANOPI_NEO:
+				switch (boot_source) {
+				case SUNXI_BOOTED_FROM_MMC0:
+					has_emmc = !run_command("mmc dev 1", 0);
+					run_command("mmc dev 0", 0);
+					break;
+				case SUNXI_BOOTED_FROM_MMC2:
+					has_emmc = 1;
+					break;
+				}
+				printf("eMMC %s\n", has_emmc?"exist":"not exist");
+
+				if (/*extra_gpio == 1 &&*/has_emmc == 1)
+					boardtype = BOARD_TYPE_NANOPI_NEO_CORE;
+
+				break;
+			default:
+				break;
+			}
+		}
 		break;
 	}	
 	if (boardtype>=0 && boardtype<BOARD_TYPE_MAX) {
@@ -797,10 +860,11 @@ static char board[BOARD_TYPE_MAX][32] = {
 	"nanopi-neo-air",
 	"nanopi-m1-plus",
 	"nanopi-duo",
+	"nanopi-neo-core",
 };
 #elif defined(CONFIG_MACH_SUN8I_H5_NANOPI)
 static char board[4][32] = {
-	"undefined",
+	"nanopi-neo-core2",
 	"nanopi-neo2",
 	"nanopi-neo-plus2",
 	"nanopi-m1-plus2",

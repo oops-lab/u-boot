@@ -199,8 +199,13 @@ defined(CONFIG_MACH_SUN50I)
 #define CPU_TYPE_H3_1	(0x00)
 #define CPU_TYPE_H3_2	(0x81)
 #define CPU_TYPE_H3D	(0x58)
-#define BOARD_TYPE_MAX  (5)
-#define BOARD_TYPE_NANOPI_DUO (4)
+#define CPU_TYPE_H5  	(0x01)			// H5-CPUID=0x01? NOT reliable
+
+#define BOARD_TYPE_MAX  (6)
+#define BOARD_TYPE_NANOPI_NEO      (1)
+#define BOARD_TYPE_NANOPI_DUO      (4)
+#define BOARD_TYPE_NANOPI_NEO_CORE (5)
+
 int nanopi_spl_get_board(void);
 #endif
 void sunxi_board_init(void);

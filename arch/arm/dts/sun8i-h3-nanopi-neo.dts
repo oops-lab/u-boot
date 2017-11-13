@@ -48,7 +48,7 @@
 #include <dt-bindings/pinctrl/sun4i-a10.h>
 
 / {
-	model = "FriendlyARM NanoPi H3";
+	model = "NanoPi H3";
 	compatible = "friendlyarm,nanopi-neo", "allwinner,sun8i-h3";
 
 	aliases {

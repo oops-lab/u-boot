@@ -530,10 +530,44 @@ int nanopi_spl_read_gpio(void)
 	}
 	return gpio;
 }
+
+int nanopi_spl_read_extra_gpio(void)
+{
+	int ret = -1, gpio = 0;
+	char pin_label[16];
+	char pin[1][8] = {
+		"PC6",
+	};	
+	int i, pin_num, id_pin, pin_value, old_func;
+	
+	pin_num = sizeof(pin) / sizeof(pin[0]);
+	for (i=0; i<pin_num; i++) {
+		memset(pin_label, 0, sizeof(pin_label));
+		sprintf(pin_label, "boardid_%d", i);
+		id_pin = sunxi_name_to_gpio(pin[i]);
+		ret = gpio_request(id_pin, pin_label);
+		if (!ret) {
+			old_func = sunxi_gpio_get_cfgpin(id_pin);	// store func
+			gpio_direction_input(id_pin);
+			sunxi_gpio_set_pull(id_pin, SUNXI_GPIO_PULL_DOWN);
+			mdelay(2);
+			pin_value = gpio_get_value(id_pin);
+			gpio |= pin_value<<i;
+			sunxi_gpio_set_cfgpin(id_pin, old_func);    // resotre func
+			gpio_free(id_pin);
+		} else {
+			printf("fail to request gpio %d\n", id_pin);
+			hang(); 
+		}
+	}
+	return gpio;
+}
+
 int nanopi_spl_get_board(void)
 {
 	int ret = -1, boardtype = -1, cputype = -1;
 	unsigned int sid[4];
+	int extra_gpio;
 	
 	ret = sunxi_get_sid(sid);
 	if (ret == 0 && sid[0] != 0) {
@@ -546,6 +580,13 @@ int nanopi_spl_get_board(void)
 		break;
 	default:		// H3 & H5
 		boardtype = nanopi_spl_read_gpio();
+		extra_gpio = nanopi_spl_read_extra_gpio();   // unreliable gpio except nanopi-neo-core. Don't count on this gpio.
+		switch (boardtype) {
+		case BOARD_TYPE_NANOPI_NEO:
+			if (extra_gpio == 1)
+				boardtype = BOARD_TYPE_NANOPI_NEO_CORE;
+			break;
+		}
 		break;
 	}
 	if (boardtype>=0 && boardtype<BOARD_TYPE_MAX) {
@@ -622,15 +663,16 @@ void sunxi_board_init(void)
 #endif
 #if defined(CONFIG_MACH_SUN8I_H3_NANOPI)
 	char board[BOARD_TYPE_MAX][32] = {
-		"Nanopi M1",			
+		"Nanopi M1",
 		"Nanopi NEO",
 		"Nanopi NEO Air",
 		"Nanopi M1 Plus",
 		"Nanopi Duo",
+		"Nanopi NEO Core",
 	};
 #elif defined(CONFIG_MACH_SUN8I_H5_NANOPI)
 	char board[BOARD_TYPE_MAX][32] = {
-		"undefined",			
+		"Nanopi NEO Core2",
 		"Nanopi NEO2",
 		"Nanopi NEO Plus2",
 		"Nanopi M1 Plus2",
@@ -639,7 +681,7 @@ void sunxi_board_init(void)
 #if defined(CONFIG_MACH_SUN8I_H3_NANOPI) || defined(CONFIG_MACH_SUN8I_H5_NANOPI)
 	int boardtype = -1;
 	if ((boardtype = nanopi_spl_get_board()) >= 0) {
-		printf("BOARD: %s\n", board[boardtype]);
+		printf("BOARD: %s id=%d\n", board[boardtype], boardtype);
 	}
 #endif
 	printf("DRAM:");
@@ -783,6 +825,11 @@ static void setup_environment(const void *fdt)
 								mac_addr[2], mac_addr[3], \
 								mac_addr[4], mac_addr[5]);
 			setenv("mac_node", mac_node);
+			sprintf(mac_node, "[%x %x %x %x %x %x]", \
+					mac_addr[0], mac_addr[5], \
+					mac_addr[4], mac_addr[3], \
+					mac_addr[2], mac_addr[1]);
+			setenv("wifi_mac_node", mac_node);
 #endif
 		}
 

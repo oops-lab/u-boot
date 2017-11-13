@@ -45,6 +45,7 @@ static int nanopi_h3_get_dram_clk(void)
 	408 /* NanoPi-NEO-Air */,
 	576 /* NanoPi-M1-Plus */,
 	408 /* NanoPi-Duo */,
+	408 /* NanoPi-NEO-Core */,
 	};
 	int boardtype = nanopi_spl_get_board();
 	return nanopi_h3_dram_clk[boardtype];
